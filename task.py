@@ -69,4 +69,4 @@ class WorkTask(Task):
         for i in range(len(self.team_members)):
             team_members_str += f"{i + 1}. {self.team_members[i]}\n"
         return (super().__str__() + 
-                f"Team Members:\n{team_members_str}")
+                f"\nTeam Members:\n{team_members_str}")

@@ -1,15 +1,19 @@
 from task_manager import TaskManager, PersonalTask, WorkTask
 
+"""Function to switch between menus. We pass the menu option and the task manager class"""
 def switch_menu(option, task_manager):
     if option == 1:  # Creating a new task
         task_type = input("Enter task type (Personal/Work): ").strip().lower()
         title = input("Enter task title: ")
         due_date = input("Enter due date (YYYY/MM/DD): ")
+        
+        # Switching between the task type
         if task_type == "personal":
-            task = PersonalTask(title, due_date)
-            desc = input("Enter description (max 15 characters): ")
+            task = PersonalTask(title, due_date) # We create a personal task object with the title and due_date
+            desc = input("Enter description (max 15 characters): ") # Characters should not exceed 15
             task.set_description(desc)
-            task_manager.add_task(task)
+            task_manager.add_task(task) # We proceed to create a new task
+        
         elif task_type == "work":
             task = WorkTask(title, due_date)
             while True:
@@ -19,31 +23,43 @@ def switch_menu(option, task_manager):
                 task.add_team_member(member)
             task_manager.add_task(task)
         else:
-            print("Invalid task type.")
+            print("Invalid task type.") # We display an error since the task type does not match what we expect
+   
     elif option == 2:  # Viewing all tasks
         task_manager.list_tasks()
+        
     elif option == 3:  # Deleting a task
         task_id = int(input("Enter task ID to delete: "))
         task_manager.delete_task(task_id)
+        
     elif option == 4:  # Saving the task list to a CSV file
         task_manager.save_task()
         print("Tasks saved to CSV.")
+        
     elif option == 5:  # Loading tasks from a CSV file
         task_manager.load_task()
         print("Tasks loaded from CSV.")
+        
     elif option == 6:  # View Pending and overdue tasks
-        pending_tasks = task_manager.get_pending_tasks()
+        pending_tasks = task_manager.get_pending_tasks() # Getting pending tasks
         print("Pending Tasks:")
+        
         for task in pending_tasks:
             print(task)
-        overdue_tasks = task_manager.get_overdue_tasks()
+        overdue_tasks = task_manager.get_overdue_tasks() # Getting overdue tasks
         print("Overdue Tasks:")
         for task in overdue_tasks:
             print(task)
+    else:
+        print("Kosonom Szepen! Viszlat!")
+        print("\n##################################################\n")
+        exit()
 
     main_menu(task_manager)
 
+"""Main menu function that displays the menu options to the user and the user have to select an option to proceed"""
 def main_menu(task_manager):
+    # We define the set of menu options in a list
     menu_options = [
         "Create a Task",
         "View all Tasks",
@@ -54,12 +70,14 @@ def main_menu(task_manager):
         "Exit"
     ]
     print("##################################################\n")
-    print("--- Welcome To Your Task Manager Application---\n")
+    print("--- Welcome To Your Task Manager Application ---\n")
     for option in range(len(menu_options)):
         print(f"{option + 1}. {menu_options[option]}")
     print("\n##################################################\n")
     user_input = int(input("Select an option to proceed:\n"))
+    print("\n##################################################\n")
 
+    # We check to validate the menu inputted by the user is within the range of the define menu options
     if user_input > 0 and user_input <= len(menu_options):
         switch_menu(user_input, task_manager)
     else:
