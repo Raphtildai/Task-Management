@@ -25,8 +25,8 @@ def switch_menu(option, task_manager):
         else:
             print("Invalid task type.") # We display an error since the task type does not match what we expect
    
-    elif option == 2:  # Viewing all tasks
-        task_manager.list_tasks()
+    elif option == 2:  # Viewing tasks
+        list_tasks_by_type() # Call the function to prompt user to enter the type of task they want to view
         
     elif option == 3:  # Deleting a task
         task_id = int(input("Enter task ID to delete: "))
@@ -38,31 +38,49 @@ def switch_menu(option, task_manager):
         
     elif option == 5:  # Loading tasks from a CSV file
         task_manager.load_task()
-        print("Tasks loaded from CSV.")
         
     elif option == 6:  # View Pending and overdue tasks
         pending_tasks = task_manager.get_pending_tasks() # Getting pending tasks
-        print("Pending Tasks:")
-        
-        for task in pending_tasks:
-            print(task)
+        print("================ Pending Tasks ================")
+        if(len(pending_tasks) < 1):
+            print("No Pending Tasks!")
+        else:
+            for task in pending_tasks:
+                print(task)
+                
         overdue_tasks = task_manager.get_overdue_tasks() # Getting overdue tasks
-        print("Overdue Tasks:")
-        for task in overdue_tasks:
-            print(task)
+        print("================ Overdue Tasks ================")
+        if(len(overdue_tasks) < 1):
+            print("No Overdue Tasks!")
+        else: 
+            for task in overdue_tasks:
+                print(task)
     else:
         print("Kosonom Szepen! Viszlat!")
         print("\n##################################################\n")
         exit()
 
     main_menu(task_manager)
+    
+"""Function to get the type of tasks to view"""
+def list_tasks_by_type():
+    task_type_to_view = int(input("Which tasks would you like to view?\nSelect from the following:\n1. Personal Tasks\n2. Work Tasks\n3. All\n"))
+    if(task_type_to_view == 1):
+        task_manager.list_tasks(PersonalTask)
+    elif(task_type_to_view == 2):
+        task_manager.list_tasks(WorkTask)
+    elif(task_type_to_view == 3):
+        task_manager.list_tasks()
+    else:
+        print("Please select the correct option!\n")
+        list_tasks_by_type()
 
 """Main menu function that displays the menu options to the user and the user have to select an option to proceed"""
 def main_menu(task_manager):
     # We define the set of menu options in a list
     menu_options = [
         "Create a Task",
-        "View all Tasks",
+        "View Tasks",
         "Delete a Task",
         "Save the task list to a CSV file",
         "Load tasks from a CSV file",

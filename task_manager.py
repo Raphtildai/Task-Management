@@ -2,22 +2,27 @@ import csv
 from datetime import datetime
 from task import Task, PersonalTask, WorkTask
 
+
+""" Super Class (Task Manager) for managing collection of Task objects"""
 class TaskManager:
     def __init__(self) -> None:
-        self.tasks = []
+        self.tasks = [] # Initializing empty list
         self.task_list_file_name = "task_list.csv"
 
-    """Function to add task. Receives the task attributes as parameter"""
+    """Function to add task. Receives the task attributes as a parameter"""
     def add_task(self, task):
         self.tasks.append(task)
         print("Task added.")
 
     """Function to list a list of tasks"""
     def list_tasks(self, flag=None):
-        for task in self.tasks:
-            if flag is None or isinstance(task, flag):
-                print(task)
-            print("\n")
+        if(len(self.tasks) < 1):
+            print("There are no tasks!\n")
+        else:
+            for task in self.tasks:
+                if flag is None or isinstance(task, flag):
+                    print(task)
+                print("\n")
 
     """Function to delete a certain task by specifying its ID"""
     def delete_task(self, task_id):
@@ -43,13 +48,23 @@ class TaskManager:
         try:
             with open(self.task_list_file_name, mode='r') as file:
                 reader = csv.DictReader(file)
-                for row in reader:
-                    if row['description'] is None:
-                        task = Task(row['title'], row['due_date'])
-                    else:
-                        task = Task(row['title'], row['due_date'])
-                        task.set_description(row['description'])
-                    self.add_task(task)
+                # Convert the reader to a list to check its length
+                rows = list(reader)
+                
+                if len(rows) < 1:
+                    self.tasks = []
+                else:
+                    self.tasks = [] # We set the tasks list to [] since we will display the tasks from the CSV file only
+                    for row in rows:
+                        if row['description'] is None:
+                            task = Task(row['title'], row['due_date'])
+                        else:
+                            task = Task(row['title'], row['due_date'])
+                            task.set_description(row['description'])
+                        self.add_task(task)
+                    
+                    print("Tasks loaded from CSV.")
+                return self.list_tasks()
         except FileNotFoundError:
             print("No saved tasks found.")
 
@@ -65,13 +80,20 @@ class TaskManager:
 # Example usage
 if __name__ == "__main__":
     tsk_mgt = TaskManager()
+    # Create a personal task
     task1 = PersonalTask("Do Laundry", "2024/11/10")
     task1.set_description("Keep Clean")
     tsk_mgt.add_task(task1)
 
+    # Create a work task
     task2 = WorkTask("Submit Assignment", "2024/11/15")
     task2.add_team_member("Dr. Gerel")
     task2.add_team_member("Raph")
     tsk_mgt.add_task(task2)
 
-    tsk_mgt.list_tasks()
+    tsk_mgt.list_tasks(PersonalTask)
+    
+    # tsk_mgt.delete_task(3)
+    # tsk_mgt.delete_task(2)
+    # tsk_mgt.delete_task(1)
+    # tsk_mgt.list_tasks()
