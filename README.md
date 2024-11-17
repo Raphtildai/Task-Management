@@ -124,6 +124,11 @@ To run this application, ensure you have Python 3.12.0 or higher installed. The 
         ```bash
         print("Invalid task type.")
         ```
+    
+    - Invalid date format. Please enter the date in YYYY/MM/DD format for Invalid dates entered by the user.
+        ```bash
+        print("Invalid date format. Please enter the date in YYYY/MM/DD format.")
+        ```
     - Description Length Validation: If the description exceeds 15 characters when setting it for a task, a ValueError is raised:
         ```bash
         raise ValueError("Description cannot exceed 15 characters.")

@@ -12,12 +12,11 @@ class TaskManager:
     """Function to add task. Receives the task attributes as a parameter"""
     def add_task(self, task):
         self.tasks.append(task)
-        print("Task added.")
 
     """Function to list a list of tasks"""
     def list_tasks(self, flag=None):
         if(len(self.tasks) < 1):
-            print("There are no tasks!\n")
+            print("There are no tasks!")
         else:
             for task in self.tasks:
                 if flag is None or isinstance(task, flag):
@@ -37,11 +36,29 @@ class TaskManager:
     """Function to save task to a CSV file"""
     def save_task(self):
         with open(self.task_list_file_name, mode='w', newline='') as file:
-            columns = ["task_id", "title", "due_date", "status", "description"]
+            columns = ["task_id", "title", "due_date", "status", "description", "flag", 'team']
             writer = csv.writer(file)
             writer.writerow(columns)
+
             for task in self.tasks:
-                writer.writerow([task.get_task_id(), task.title, task.due_date, task.status, task.get_description()])
+                # Prepare the common fields
+                task_data = [
+                    task.get_task_id(), 
+                    task.title, 
+                    task.due_date, 
+                    task.status, 
+                    task.get_description(), 
+                    task.flag
+                ]
+                
+                # Add team_members or None based on the flag
+                if task.flag == 'personal':
+                    task_data.append(None)
+                else:
+                    task_data.append(task.team_members)
+                
+                # Write the row
+                writer.writerow(task_data)
 
     """Function to load the tasks from the CSV file"""
     def load_task(self):
@@ -57,9 +74,9 @@ class TaskManager:
                     self.tasks = [] # We set the tasks list to [] since we will display the tasks from the CSV file only
                     for row in rows:
                         if row['description'] is None:
-                            task = Task(row['title'], row['due_date'])
+                            task = Task(row['title'], row['due_date'], row['flag'])
                         else:
-                            task = Task(row['title'], row['due_date'])
+                            task = Task(row['title'], row['due_date'], row['flag'])
                             task.set_description(row['description'])
                         self.add_task(task)
                     

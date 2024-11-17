@@ -4,13 +4,14 @@ from datetime import datetime
 class Task:
     _task_counter = 1  # Class variable for auto-incremented task ID
 
-    def __init__(self, title, due_date):
+    def __init__(self, title, due_date, flag):
         self._task_id = Task._task_counter  # Unique task ID
         Task._task_counter += 1
         self.title = title
         self.due_date = due_date
         self.status = "pending"
         self._description = None  # Protected attribute
+        self.flag = flag
 
     """Function to change the task status to completed"""
     def mark_completed(self):
@@ -42,7 +43,7 @@ class Task:
 """Sub-class for managing personal tasks"""
 class PersonalTask(Task):
     def __init__(self, title, due_date):
-        super().__init__(title, due_date)
+        super().__init__(title, due_date, 'personal')
         self.priority = "low"
         
     """Function to check if the priority of a task. It returns true if priority is set to high otherwise, it returns false"""
@@ -51,7 +52,7 @@ class PersonalTask(Task):
 
     """Function to change priority of the task. It allows only high, medium and low"""
     def set_priority(self, task_priority):
-        allowed_priorities = ["high", "medium", "low"] # Allowes priorities
+        allowed_priorities = ["high", "medium", "low"] # Allowed priorities
         if task_priority not in allowed_priorities:
             print(f"Invalid Priority given. The allowed priorities are:\n {allowed_priorities}")
             return
@@ -67,7 +68,7 @@ class PersonalTask(Task):
 """Sub-class for managing work tasks"""
 class WorkTask(Task):
     def __init__(self, title, due_date):
-        super().__init__(title, due_date)
+        super().__init__(title, due_date, 'work')
         self.team_members = []
 
     """Function to add team members to work tasks"""

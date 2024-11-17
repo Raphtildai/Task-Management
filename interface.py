@@ -1,3 +1,4 @@
+from datetime import datetime
 from task_manager import TaskManager, PersonalTask, WorkTask
 
 """Function to switch between menus. We pass the menu option and the task manager class"""
@@ -5,7 +6,7 @@ def switch_menu(option, task_manager):
     if option == 1:  # Creating a new task
         task_type = input("Enter task type (Personal/Work): ").strip().lower()
         title = input("Enter task title: ")
-        due_date = input("Enter due date (YYYY/MM/DD): ")
+        due_date = get_due_date()
         
         # Switching between the task type
         if task_type == "personal":
@@ -13,15 +14,19 @@ def switch_menu(option, task_manager):
             desc = input("Enter description (max 15 characters): ") # Characters should not exceed 15
             task.set_description(desc)
             task_manager.add_task(task) # We proceed to create a new task
+            print("Personal Task added.")
         
         elif task_type == "work":
             task = WorkTask(title, due_date)
+            desc = input("Enter description (max 15 characters): ") # Characters should not exceed 15
+            task.set_description(desc)
             while True:
                 member = input("Enter team member name (or type 'done' to finish): ")
                 if member.lower() == 'done':
                     break
                 task.add_team_member(member)
             task_manager.add_task(task)
+            print("Work Task added.")
         else:
             print("Invalid task type.") # We display an error since the task type does not match what we expect
    
@@ -62,6 +67,21 @@ def switch_menu(option, task_manager):
 
     main_menu(task_manager)
     
+"""Function to validate the date entered by the user"""
+def get_due_date():
+    while True:
+        due_date = input("Enter due date (YYYY/MM/DD): ")
+        
+        try:
+            # Parsing the input string as a date in the given format
+            parsed_date = datetime.strptime(due_date, "%Y/%m/%d")
+            
+            # If the date is parsed successfully, we return the parsed date 
+            return parsed_date.strftime("%Y/%m/%d")
+        
+        except ValueError: # raise an error 
+            print("Invalid date format. Please enter the date in YYYY/MM/DD format.")
+
 """Function to get the type of tasks to view"""
 def list_tasks_by_type():
     task_type_to_view = int(input("Which tasks would you like to view?\nSelect from the following:\n1. Personal Tasks\n2. Work Tasks\n3. All\n"))
