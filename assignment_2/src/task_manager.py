@@ -1,117 +1,166 @@
 import csv
 from datetime import datetime
 from task import Task, PersonalTask, WorkTask
+from db import TaskManagerDB
 
 
-""" Super Class (Task Manager) for managing collection of Task objects"""
 class TaskManager:
-    def __init__(self) -> None:
-        self.tasks = [] # Initializing empty list
-        self.task_list_file_name = "task_list.csv"
+    def __init__(self, db) -> None:
+        self.tasks = []  # Initialize an empty list for tasks
+        self.db = db  # Assign the database instance
 
-    """Function to add task. Receives the task attributes as a parameter"""
-    def add_task(self, task):
+    def add_task(self, task_data):
+        """
+        Add a task to the task list. Supports both Task objects and dictionary-based data.
+        """
+        if isinstance(task_data, dict):
+            # Convert dictionary to a Task object
+            task = Task(
+                title=task_data["title"],
+                due_date=task_data["due_date"],
+                flag=task_data["flag"]
+            )
+            task.set_description(task_data.get("description", ""))
+        else:
+            task = task_data  
         self.tasks.append(task)
 
-    """Function to list a list of tasks"""
     def list_tasks(self, flag=None):
-        if(len(self.tasks) < 1):
+        """
+        List tasks, optionally filtered by the task flag (e.g., PersonalTask or WorkTask).
+        """
+        tasks = self.db.load_from_db()["data"]
+        if not tasks:
             print("There are no tasks!")
-        else:
-            for task in self.tasks:
-                if flag is None or isinstance(task, flag):
-                    print(task)
-                print("\n")
+            return []
 
-    """Function to delete a certain task by specifying its ID"""
+        results = []
+        for task in tasks:
+            if flag is None or task.get("flag") == flag:
+                results.append(task)
+                print(task)
+        print("\n")
+        return results
+
     def delete_task(self, task_id):
-        # Here I used next function (similar to using a for loop) to iterate over the tasks to find what we are looking for by its ID
-        task_to_delete = next((task for task in self.tasks if task.get_task_id() == task_id), None)
-        if task_to_delete:
-            self.tasks.remove(task_to_delete)
-            print(f"Task {task_id} deleted.")
-        else:
-            print("Task not found.")
+        """
+        Delete a task by ID from the database.
+        """
+        return self.db.delete_from_db(task_id)
 
-    """Function to save task to a CSV file"""
     def save_task(self):
-        with open(self.task_list_file_name, mode='w', newline='') as file:
-            columns = ["task_id", "title", "due_date", "status", "description", "flag", 'team']
-            writer = csv.writer(file)
-            writer.writerow(columns)
+        """
+        Save tasks to the database.
+        """
+        for task in self.tasks:
+            if isinstance(task, Task):
+                # Extract task data from the Task object
+                task_data = {
+                    "title": task.title,
+                    "due_date": task.due_date,
+                    "status": getattr(task, "status", "pending"),  # Default to "pending" if not provided
+                    "description": task.get_description(),
+                    "flag": task.flag,
+                    "team_members": getattr(task, "team_members", []),
+                    "priority": getattr(task, "priority", "low"),  # Default to "low" if not provided
+                }
+            else:
+                task_data = task  
 
-            for task in self.tasks:
-                # Prepare the common fields
-                task_data = [
-                    task.get_task_id(), 
-                    task.title, 
-                    task.due_date, 
-                    task.status, 
-                    task.get_description(), 
-                    task.flag
-                ]
-                
-                # Add team_members or None based on the flag
-                if task.flag == 'personal':
-                    task_data.append(None)
-                else:
-                    task_data.append(task.team_members)
-                
-                # Write the row
-                writer.writerow(task_data)
+            # Save the task data to the database
+            return self.db.save_to_db(task_data)
 
-    """Function to load the tasks from the CSV file"""
     def load_task(self):
-        try:
-            with open(self.task_list_file_name, mode='r') as file:
-                reader = csv.DictReader(file)
-                # Convert the reader to a list to check its length
-                rows = list(reader)
-                
-                if len(rows) < 1:
-                    self.tasks = []
+        """
+        Load tasks from the database into the TaskManager.
+        """
+        rows = self.db.load_from_db()["data"]
+
+        if not rows:
+            self.tasks = []
+        else:
+            self.tasks = []  # Clear existing tasks
+            for row in rows:
+                # Create the appropriate task object based on the flag
+                if row["flag"] == "work":
+                    task = WorkTask(row["title"], row["due_date"])
+                    members = self.db.fetch_members(row["task_id"])
+                    for member in members:
+                        task.add_team_member(f"{member[2]} {member[3]}")
                 else:
-                    self.tasks = [] # We set the tasks list to [] since we will display the tasks from the CSV file only
-                    for row in rows:
-                        if row['description'] is None:
-                            task = Task(row['title'], row['due_date'], row['flag'])
-                        else:
-                            task = Task(row['title'], row['due_date'], row['flag'])
-                            task.set_description(row['description'])
-                        self.add_task(task)
-                    
-                    print("Tasks loaded from CSV.")
-                return self.list_tasks()
-        except FileNotFoundError:
-            print("No saved tasks found.")
+                    task = PersonalTask(row["title"], row["due_date"])
 
-    """Function to get the pending tasks"""
+                # Set additional properties
+                task.set_description(row.get("description", ""))
+                task.set_task_id(row["task_id"])
+
+                # Add to tasks list
+                self.add_task(task)
+
+            print("Tasks loaded from the Database.")
+        return self.list_tasks()
+
     def get_pending_tasks(self):
-        return list(filter(lambda task: task.status == "pending", self.tasks))
+        """
+        Get all pending tasks.
+        """
+        tasks = self.db.load_from_db()["data"]
+        return [task for task in tasks if task["status"].strip().lower() == "pending"]
 
-    """Function to get the overdue tasks"""
     def get_overdue_tasks(self):
+        """
+        Get all overdue tasks.
+        """
+        tasks = self.db.load_from_db()["data"]
         current_date = datetime.now().date()
-        return [task for task in self.tasks if datetime.strptime(task.due_date, '%Y/%m/%d').date() < current_date]
+        return [task for task in tasks if datetime.strptime(task["due_date"], '%Y/%m/%d').date() < current_date]
+
 
 # Example usage
 if __name__ == "__main__":
-    tsk_mgt = TaskManager()
-    # Create a personal task
-    task1 = PersonalTask("Do Laundry", "2024/11/10")
-    task1.set_description("Keep Clean")
-    tsk_mgt.add_task(task1)
+    db = TaskManagerDB()  # Create database instance
+    task_manager = TaskManager(db)
 
-    # Create a work task
-    task2 = WorkTask("Submit Assignment", "2024/11/15")
-    task2.add_team_member("Dr. Gerel")
-    task2.add_team_member("Raph")
-    tsk_mgt.add_task(task2)
+    # Load tasks from the database
+    # task_manager.load_task()
 
-    tsk_mgt.list_tasks(PersonalTask)
-    tsk_mgt.save_task()
+    # tasks = tsk_mgt.load_task()
+    # print(tasks)
+    # exit()
     
-    # tsk_mgt.delete_task(3)
-    # tsk_mgt.delete_task(2)
-    # tsk_mgt.delete_task(1)
-    # tsk_mgt.list_tasks()
+    # # Saving a work task with teams
+    # work_task_data = {
+    #     "title": "Team Project",
+    #     "due_date": "2024/12/12",
+    #     "status": "ongoing",
+    #     "description": "Complete the team project",
+    #     "flag": "work",
+    #     "priority": "low",
+    #     "teams": [("Raphael", "Tildai"), ("Dr. Gerel", "Lec")]
+    # }
+    # response = tsk_mgt.save_task(work_task_data)
+    # print(response)
+    
+    # response = tsk_mgt.delete_task(3)
+    # print(response)
+    
+    
+    
+    # # Create a personal task
+    # task1 = PersonalTask("Do Laundry", "2024/11/10")
+    # task1.set_description("Keep Clean")
+    # tsk_mgt.add_task(task1)
+
+    # # Create a work task
+    # task2 = WorkTask("Submit Assignment", "2024/11/15")
+    # task2.add_team_member("Dr. Gerel")
+    # task2.add_team_member("Raph")
+    # tsk_mgt.add_task(task2)
+
+    # tsk_mgt.list_tasks(PersonalTask)
+    # tsk_mgt.save_task()
+    
+    # # tsk_mgt.delete_task(3)
+    # # tsk_mgt.delete_task(2)
+    # # tsk_mgt.delete_task(1)
+    # # tsk_mgt.list_tasks()

@@ -1,12 +1,10 @@
 from datetime import datetime
+from db import TaskManagerDB
 
 """ Super Class (Task) for managing creation of task, setting description and outputting the task details """
 class Task:
-    _task_counter = 1  # Class variable for auto-incremented task ID
-
     def __init__(self, title, due_date, flag):
-        self._task_id = Task._task_counter  # Unique task ID
-        Task._task_counter += 1
+        self._task_id = None
         self.title = title
         self.due_date = due_date
         self.status = "pending"
@@ -24,10 +22,14 @@ class Task:
     """Getter function to get the description of a task"""
     def get_description(self):
         return self._description
+    
+    def set_task_id(self, task_id):
+        """Setter function to set the task ID of a task."""
+        self._task_id = task_id
 
     """Setter function to set the description of a task. The description len should be < 15 characters"""
     def set_description(self, desc):
-        if len(desc) > 15:
+        if len(desc) > 50:
             raise ValueError("Description cannot exceed 15 characters.")
         self._description = desc
 

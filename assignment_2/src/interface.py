@@ -1,5 +1,6 @@
 from datetime import datetime
 from task_manager import TaskManager, PersonalTask, WorkTask
+from db import TaskManagerDB 
 
 """Function to switch between menus. We pass the menu option and the task manager class"""
 def switch_menu(option, task_manager):
