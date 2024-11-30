@@ -109,6 +109,7 @@ if __name__ == "__main__":
     tsk_mgt.add_task(task2)
 
     tsk_mgt.list_tasks(PersonalTask)
+    tsk_mgt.save_task()
     
     # tsk_mgt.delete_task(3)
     # tsk_mgt.delete_task(2)

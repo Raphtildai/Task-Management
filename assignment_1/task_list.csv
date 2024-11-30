@@ -1,0 +1,3 @@
+task_id,title,due_date,status,description,flag,team
+1,Do Laundry,2024/11/10,pending,Keep Clean,personal,
+2,Submit Assignment,2024/11/15,pending,,work,"['Dr. Gerel', 'Raph']"
