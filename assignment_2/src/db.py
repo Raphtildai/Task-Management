@@ -2,7 +2,7 @@ import sqlite3
 
 # This class represents a database for managing tasks.
 class TaskManagerDB:
-    def __init__(self, db_name = 'task_manager.db'):
+    def __init__(self, db_name = 'manager.db'):
         """
         This is a Python constructor function that initializes an object with a specified database name.
         
@@ -34,7 +34,7 @@ class TaskManagerDB:
         """
         cursor.close()
         conn.close()
-        return {"message": "Database connection closed successfully", "data": []}
+        return {"success": True, "message": "Database connection closed successfully", "data": []}
 
     def create_task_table(self):
         """
@@ -53,9 +53,9 @@ class TaskManagerDB:
                     )'''
             cursor.execute(sql)
             conn.commit()
-            response = {"message": "Task table created successfully", "data": []}
+            response = {"success": True, "message": "Task table created successfully", "data": []}
         except sqlite3.Error as e:
-            response = {"message": f"Error creating task table: {e}", "data": []}
+            response = {"success": False, "message": f"Error creating task table: {e}", "data": []}
         finally:
             self.disconnect_db(conn, cursor)
         return response
@@ -75,9 +75,9 @@ class TaskManagerDB:
                     )'''
             cursor.execute(sql)
             conn.commit()
-            response = {"message": "Teams table created successfully", "data": []}
+            response = {"success": True, "message": "Teams table created successfully", "data": []}
         except sqlite3.Error as e:
-            response = {"message": f"Error creating teams table: {e}", "data": []}
+            response = {"success": False, "message": f"Error creating teams table: {e}", "data": []}
         finally:
             self.disconnect_db(conn, cursor)
         return response
@@ -106,12 +106,12 @@ class TaskManagerDB:
             if task_data['flag'] == "work" and 'teams' in task_data:
                 sql_team = '''INSERT INTO teams (task_id, first_name, last_name) VALUES (?, ?, ?)'''
                 for team_name in task_data['teams']:
-                    cursor.execute(sql_team, (task_id, team_name[0], team_name[1]))
+                    cursor.execute(sql_team, (task_id, team_name.get("first_name"), team_name.get("last_name")))
                 conn.commit()
 
-            response = {"message": "Data saved successfully", "data": task_data}
+            response = {"success": True, "message": "Data saved successfully", "data": task_data}
         except sqlite3.Error as e:
-            response = {"message": f"Error saving data: {e}", "data": []}
+            response = {"success": False, "message": f"Error saving data: {e}", "data": []}
         finally:
             self.disconnect_db(conn, cursor)
         return response
@@ -128,12 +128,12 @@ class TaskManagerDB:
             cursor.execute(sql_teams, (task_id,))
             data = [(row[0], row[1], row[2], row[3]) for row in cursor.fetchall()]
             if len(data) == 0:
-                response = {"message": f"No Members found", "data": []}
+                response = {"success": True, "message": f"No Members found", "data": []}
             else:
-                response = {"message": f"Members found", "data": data}                
+                response = {"success": True, "message": f"Members found", "data": data}                
             
         except sqlite3.Error as e:
-            response = {"message": f"Error loading data: {e}", "data": []}
+            response = {"success": False, "message": f"Error loading data: {e}", "data": []}
         finally:
             self.disconnect_db(conn, cursor)
         return response
@@ -170,9 +170,9 @@ class TaskManagerDB:
 
                 enriched_tasks.append(task_dict)
 
-            response = {"message": "Data loaded successfully", "data": enriched_tasks}
+            response = {"success": True, "message": "Data loaded successfully", "data": enriched_tasks}
         except sqlite3.Error as e:
-            response = {"message": f"Error loading data: {e}", "data": []}
+            response = {"success": False, "message": f"Error loading data: {e}", "data": []}
         finally:
             self.disconnect_db(conn, cursor)
         return response
@@ -180,11 +180,9 @@ class TaskManagerDB:
     def find_single_task(self, task_id):
         """
         This function is used to find a single task based on its task_id.
-        
+
         :param task_id: The `find_single_task` method is used to search for a specific task based on its
         `task_id`. The `task_id` parameter is the unique identifier of the task that you want to find.
-        This identifier is typically assigned to each task when it is created and can be used to
-        uniquely identify
         """
         conn, cursor = self.connect_db()
         response = {}
@@ -193,22 +191,30 @@ class TaskManagerDB:
             cursor.execute(sql, (task_id,))
             row = cursor.fetchone()
             if row:
+                # Convert row to a dictionary 
+                task_data = {
+                    "task_id": row[0],
+                    "title": row[1],
+                    "due_date": row[2],
+                    "status": row[3],
+                    "description": row[4],
+                    "flag": row[5],
+                    "priority": row[6],
+                }
                 if row[5] == "work":
                     members = self.fetch_members(task_id)
-                    if len(members['data']) == 0:
-                        team = tuple([])
-                        new_data = row + team
-                    else:
-                        team = tuple([members["data"]])
-                        new_data = row + team
-                    response = {"message": "Task found", "data": new_data}
+                    task_data["teams"] = members["data"] if members["data"] else []
+
+                response = {"success": True, "message": "Task found", "data": task_data}
+                return response
             else:
-                response = {"message": "Task not found", "data": []}
+                response = {"success": False, "message": "Task not found", "data": []}
+                return response
         except sqlite3.Error as e:
-            response = {"message": f"Error finding task: {e}", "data": []}
+            response = {"success": False, "message": f"Error finding task: {e}", "data": []}
+            return response
         finally:
             self.disconnect_db(conn, cursor)
-        return response
 
     def insert_team_member(self, task_id, first_name, last_name):
         """
@@ -223,9 +229,9 @@ class TaskManagerDB:
             sql_insert_team = '''INSERT INTO teams (task_id, first_name, last_name) VALUES (?, ?, ?)'''
             cursor.execute(sql_insert_team, (task_id, first_name, last_name))
             conn.commit()
-            return {"message": "Team member added successfully"}
+            return {"success": True, "message": "Team member added successfully"}
         except sqlite3.Error as e:
-            return {"message": f"Error inserting team member: {e}"}
+            return {"success": False, "message": f"Error inserting team member: {e}"}
         finally:
             self.disconnect_db(conn, cursor)
 
@@ -244,9 +250,9 @@ class TaskManagerDB:
             sql_update_team = '''UPDATE teams SET first_name = ?, last_name = ? WHERE team_id = ? AND task_id = ?'''
             cursor.execute(sql_update_team, (first_name, last_name, team_id, task_id))
             conn.commit()
-            return {"message": "Team member updated successfully"}
+            return {"success": True, "message": "Team member updated successfully"}
         except sqlite3.Error as e:
-            return {"message": f"Error updating team member: {e}"}
+            return {"success": False, "message": f"Error updating team member: {e}"}
         finally:
             self.disconnect_db(conn, cursor)
 
@@ -263,9 +269,9 @@ class TaskManagerDB:
             sql_delete_team = '''DELETE FROM teams WHERE team_id = ? AND task_id = ?'''
             cursor.execute(sql_delete_team, (team_id, task_id))
             conn.commit()
-            return {"message": "Team member deleted successfully"}
+            return {"success": True, "message": "Team member deleted successfully"}
         except sqlite3.Error as e:
-            return {"message": f"Error deleting team member: {e}"}
+            return {"success": False, "message": f"Error deleting team member: {e}"}
         finally:
             self.disconnect_db(conn, cursor)
 
@@ -277,8 +283,8 @@ class TaskManagerDB:
         :param task_update: A dictionary containing the updated task and team information.
         """
         task = self.find_single_task(task_id)
-        if len(task) == 0:
-            return {"message": "Task with the specified ID does not exist", "data": []}
+        if not task["success"]:
+            return {"success": False, "message": "Task with the specified ID does not exist", "data": []}
 
         conn, cursor = self.connect_db()
         try:
@@ -306,12 +312,12 @@ class TaskManagerDB:
                         existing_teams = []
 
                     # Prepare updated team data
-                    new_teams = task_update['teams']
+                    new_teams = task_update.get("teams", [])
 
                     # Update or add new members
                     updated_team_ids = []
                     for new_team in new_teams:
-                        first_name, last_name = new_team[0], new_team[1]
+                        first_name, last_name = new_team.get("first_name"), new_team.get("last_name")
                         found = False
                         for team_id, task_id, existing_first, existing_last in existing_teams:
                             name_change = first_name == existing_first and last_name == existing_last
@@ -336,9 +342,9 @@ class TaskManagerDB:
                             self.delete_team_member(team_id, task_id)
 
             updated_task = self.find_single_task(task_id)
-            response = {"message": "Task and teams updated successfully", "data": updated_task["data"]}
+            response = {"success": True, "message": "Task and teams updated successfully", "data": updated_task["data"]}
         except sqlite3.Error as e:
-            response = {"message": f"Error updating task: {e}", "data": []}
+            response = {"success": False, "message": f"Error updating task: {e}", "data": []}
         finally:
             self.disconnect_db(conn, cursor)
         return response
@@ -352,13 +358,13 @@ class TaskManagerDB:
         :return: A dictionary containing the status of the deletion.
         """
         task = self.find_single_task(task_id)
-        if len(task["data"]) == 0:
-            return {"message": "Task with the specified ID does not exist", "data": []}
+        if not task["success"]:
+            return {"success": False, "message": "Task with the specified ID does not exist", "data": []}
         else: 
             conn, cursor = self.connect_db()
             try:
                 # Check if the flag is 'work'
-                flag = task["data"][5]  
+                flag = task.get("flag") 
                 if flag == "work":
                     # Delete associated teams first
                     sql_teams = '''DELETE FROM teams WHERE task_id = ?'''
@@ -368,16 +374,17 @@ class TaskManagerDB:
                 sql_task = '''DELETE FROM task_manager WHERE task_id = ?'''
                 cursor.execute(sql_task, (task_id,))
                 conn.commit()
-                response = {"message": "Task and associated teams deleted successfully", "data": []}
+                response = {"success": True, "message": "Task and associated teams deleted successfully", "data": []}
+                return response
             except sqlite3.Error as e:
-                response = {"message": f"Error deleting task: {e}", "data": []}
+                response = {"success": False, "message": f"Error deleting task: {e}", "data": []}
+                return response
             finally:
                 self.disconnect_db(conn, cursor)
-            return response
 
 if __name__ == "__main__":
     # Example usage
-    db = TaskManagerDB('task_manager.db')
+    db = TaskManagerDB()
 
     # Creating tables
     print(db.create_task_table())

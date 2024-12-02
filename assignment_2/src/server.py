@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request
 from task_manager import TaskManager
 from db import TaskManagerDB
 
@@ -15,8 +15,8 @@ def create_response(message, status, status_code, data=None):
         "data": data if data else []
     }
 
-# POST /tasks: Add a new task
-@app.route('/tasks', methods=['POST'])
+# POST /tasks/new: Add a new task
+@app.route('/tasks/new', methods=['POST'])
 def create_task():
     data = request.json
 
@@ -40,18 +40,24 @@ def create_task():
     }
 
     # Save task
-    task_manager.add_task(task_data)
-    task_manager.save_task()
+    result = task_manager.add_task(task_data)
+    if result["success"]:   
+        response = create_response(
+            "Task added successfully",
+            "success",
+            201
+        )
+        return jsonify(response)
+    else:
+        response = create_response(
+            result["message"],
+            "error",
+            400
+        )
+        return jsonify(response)
 
-    response = create_response(
-        "Task added successfully",
-        "success",
-        201
-    )
-    return jsonify(response)
-
-# GET /tasks: Retrieve all tasks
-@app.route('/tasks', methods=['GET'])
+# GET /tasks/all: Retrieve all tasks
+@app.route('/tasks/all', methods=['GET'])
 def get_tasks():
     tasks = task_manager.list_tasks()
     message = "Tasks retrieved successfully." if len(tasks) > 0 else "No tasks found."
@@ -63,80 +69,46 @@ def get_tasks():
     )
     return jsonify(response)
 
-# GET /tasks/<task_id>: Retrieve a task by ID
-@app.route('/tasks/<int:task_id>', methods=['GET'])
+# GET /tasks/find/<task_id>: Retrieve a task by ID
+@app.route('/tasks/find/<int:task_id>', methods=['GET'])
 def get_task_by_id(task_id):
-    tasks = task_manager.db.load_from_db()["data"]
-    task = next((t for t in tasks if t["task_id"] == task_id), None)
-    if not task:
-        response = create_response(
-            "Task not found.",
-            "error",
-            404
-        )
-        return jsonify(response)
-    response = create_response(
-        "Task retrieved successfully.",
-        "success",
-        200,
-        task
-    )
-    return jsonify(response)
+    # print("The task ID received is: ",task_id)
+    task = task_manager.find_task(task_id)
+    return jsonify(task)
 
-@app.route('/tasks/<int:task_id>', methods=['PUT'])
+# UPDATE /tasks/update<task_id>: update a task by ID
+@app.route('/tasks/update/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
-    data = request.json
+    # print(f"Request Method: {request.method}")
+    # print(f"Request URL: {request.url}")
+    # print(f"Request Headers: {request.headers}")
+    # print(f"Request Data (raw): {request.data}")
+    # print(f"Request JSON: {request.json}")
 
-    # Validate request data
+    data = request.json
     if not data:
         response = create_response(
-            "No data provided for update.",
+            "No JSON data provided or invalid JSON format.",
             "error",
             400
         )
         return jsonify(response)
 
     # Check if the task exists
-    tasks = task_manager.db.load_from_db()["data"]
-    task = next((t for t in tasks if t["task_id"] == task_id), None)
-    if not task:
-        response = create_response(
-            "Task not found.",
-            "error",
-            404
-        )
-        return jsonify(response)
+    task = task_manager.find_task(task_id)
+    if not task["success"]:
+        return jsonify(task)
+    else: 
+        # Merge the existing task with the new data
+        updated_task = {**task["data"], **data}  # Ensure correct unpacking of task data
+        result = task_manager.update_task(task_id, updated_task)  # Save changes
+        return jsonify(result)
 
-    # Update the task
-    updated_task = {**task, **data}  # Merge the existing task with the new data
-    task_manager.update_task(task_id, updated_task)  # Save changes
-    task_manager.save_task()  # Persist to the database
-
-    response = create_response(
-        "Task updated successfully.",
-        "success",
-        200,
-        updated_task
-    )
-    return jsonify(response)
-
-# DELETE /tasks/<task_id>: Delete a task by ID
-@app.route('/tasks/<int:task_id>', methods=['DELETE'])
+# DELETE /tasks/delete<task_id>: Delete a task by ID
+@app.route('/tasks/delete/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
     response_data = task_manager.delete_task(task_id)
-    if response_data["success"]:
-        response = create_response(
-            "Task deleted successfully.",
-            "success",
-            200
-        )
-    else:
-        response = create_response(
-            response_data["message"],
-            "error",
-            404
-        )
-    return jsonify(response)
+    return jsonify(response_data)
 
 # GET /tasks/pending: Retrieve all pending tasks
 @app.route('/tasks/pending', methods=['GET'])
@@ -178,3 +150,4 @@ def get_overdue_tasks():
 
 if __name__ == '__main__':
     app.run(debug=True)
+    

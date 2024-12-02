@@ -6,24 +6,18 @@ from db import TaskManagerDB
 
 class TaskManager:
     def __init__(self, db) -> None:
-        self.tasks = []  # Initialize an empty list for tasks
         self.db = db  # Assign the database instance
 
     def add_task(self, task_data):
+        print(task_data)
         """
         Add a task to the task list. Supports both Task objects and dictionary-based data.
         """
         if isinstance(task_data, dict):
-            # Convert dictionary to a Task object
-            task = Task(
-                title=task_data["title"],
-                due_date=task_data["due_date"],
-                flag=task_data["flag"]
-            )
-            task.set_description(task_data.get("description", ""))
+            # Trigger save to db
+            return self.save_task(task_data)  
         else:
-            task = task_data  
-        self.tasks.append(task)
+            return {"success": False, "message": "The input data for task should be an instance of a Task Class", "data": []} 
 
     def list_tasks(self, flag=None):
         """
@@ -47,28 +41,75 @@ class TaskManager:
         Delete a task by ID from the database.
         """
         return self.db.delete_from_db(task_id)
-
-    def save_task(self):
+    
+    def update_task(self, task_id, updated_data):
         """
-        Save tasks to the database.
+        Update a task with new data based on the provided task ID.
+        Uses the `update_in_db` method from the `TaskManagerDB` class.
         """
-        for task in self.tasks:
-            if isinstance(task, Task):
-                # Extract task data from the Task object
-                task_data = {
-                    "title": task.title,
-                    "due_date": task.due_date,
-                    "status": getattr(task, "status", "pending"),  # Default to "pending" if not provided
-                    "description": task.get_description(),
-                    "flag": task.flag,
-                    "team_members": getattr(task, "team_members", []),
-                    "priority": getattr(task, "priority", "low"),  # Default to "low" if not provided
-                }
-            else:
-                task_data = task  
+        # Validate the input data structure
+        if not isinstance(updated_data, dict):
+            return {
+                "success": False,
+                "message": "Invalid data format. Expected a dictionary.",
+            }
 
-            # Save the task data to the database
-            return self.db.save_to_db(task_data)
+        # Ensure the task exists before attempting an update
+        existing_task = self.db.find_single_task(task_id)
+        if not existing_task["success"]:
+            return {
+                "success": False,
+                "message": f"Task with ID {task_id} not found.",
+            }
+
+        # Merge the existing task data with the updated data
+        current_data = existing_task
+        merged_data = {**current_data, **updated_data}
+
+        # Call the database method to perform the update
+        result = self.db.update_in_db(task_id, merged_data)
+
+        # Return the response from the database update operation
+        if result["success"]:
+            return {
+                "success": True,
+                "message": result["message"],
+                "data": result["data"],
+            }
+        else:
+            return {
+                "success": False,
+                "message": result["message"],
+            }
+
+    def save_task(self, task_data):
+        """
+        Save a task to the database.
+        Handles both Task objects and dictionary-based task data.
+        """
+        if isinstance(task_data, Task):
+            # Convert Task object to dictionary
+            task_data = {
+                "title": task_data.title,
+                "due_date": task_data.due_date,
+                "status": getattr(task_data, "status", "pending"),  # Default to "pending" if not provided
+                "description": task_data.get_description(),
+                "flag": task_data.flag,
+                "team_members": getattr(task_data, "team_members", []),
+                "priority": getattr(task_data, "priority", "low"),  # Default to "low" if not provided
+            }
+        elif not isinstance(task_data, dict):
+            # If task_data is neither a Task instance nor a dictionary, return an error
+            return {"success": False, "message": "Invalid input format. Provide a Task object or a dictionary.", "data": []}
+
+        # Save the task data to the database
+        result = self.db.save_to_db(task_data)
+        if result["success"]:
+            return {"success": True, "message": "Task saved successfully.", "data": result["data"]}
+        else:
+            return {"success": False, "message": result["message"], "data": []}
+
+        # Save the task data to the database
 
     def load_task(self):
         """
@@ -77,9 +118,8 @@ class TaskManager:
         rows = self.db.load_from_db()["data"]
 
         if not rows:
-            self.tasks = []
+            return []
         else:
-            self.tasks = []  # Clear existing tasks
             for row in rows:
                 # Create the appropriate task object based on the flag
                 if row["flag"] == "work":
@@ -99,6 +139,13 @@ class TaskManager:
 
             print("Tasks loaded from the Database.")
         return self.list_tasks()
+    
+    def find_task(self, task_id):
+        """
+        Find a specific task.
+        """
+        task = self.db.find_single_task(task_id)
+        return task
 
     def get_pending_tasks(self):
         """
@@ -113,20 +160,18 @@ class TaskManager:
         """
         tasks = self.db.load_from_db()["data"]
         current_date = datetime.now().date()
-        return [task for task in tasks if datetime.strptime(task["due_date"], '%Y/%m/%d').date() < current_date]
+        return [task for task in tasks if task["status"] == "pending" and datetime.strptime(task["due_date"], '%Y/%m/%d').date() < current_date]
 
 
 # Example usage
 if __name__ == "__main__":
     db = TaskManagerDB()  # Create database instance
+    db.create_task_table()
+    db.create_teams_table()
     task_manager = TaskManager(db)
 
-    # Load tasks from the database
+    # # Load tasks from the database
     # task_manager.load_task()
-
-    # tasks = tsk_mgt.load_task()
-    # print(tasks)
-    # exit()
     
     # # Saving a work task with teams
     # work_task_data = {
@@ -138,10 +183,10 @@ if __name__ == "__main__":
     #     "priority": "low",
     #     "teams": [("Raphael", "Tildai"), ("Dr. Gerel", "Lec")]
     # }
-    # response = tsk_mgt.save_task(work_task_data)
+    # response = task_manager.save_task(work_task_data)
     # print(response)
     
-    # response = tsk_mgt.delete_task(3)
+    # response = task_manager.delete_task(3)
     # print(response)
     
     
@@ -149,18 +194,18 @@ if __name__ == "__main__":
     # # Create a personal task
     # task1 = PersonalTask("Do Laundry", "2024/11/10")
     # task1.set_description("Keep Clean")
-    # tsk_mgt.add_task(task1)
+    # task_manager.add_task(task1)
 
     # # Create a work task
     # task2 = WorkTask("Submit Assignment", "2024/11/15")
     # task2.add_team_member("Dr. Gerel")
     # task2.add_team_member("Raph")
-    # tsk_mgt.add_task(task2)
+    # task_manager.add_task(task2)
 
-    # tsk_mgt.list_tasks(PersonalTask)
-    # tsk_mgt.save_task()
+    # task_manager.list_tasks(PersonalTask)
+    # task_manager.save_task()
     
-    # # tsk_mgt.delete_task(3)
-    # # tsk_mgt.delete_task(2)
-    # # tsk_mgt.delete_task(1)
-    # # tsk_mgt.list_tasks()
+    # # task_manager.delete_task(3)
+    # # task_manager.delete_task(2)
+    # # task_manager.delete_task(1)
+    # # task_manager.list_tasks()
