@@ -297,27 +297,35 @@ class TaskManagerDB:
             conn.commit()
 
             # Handle team updates if the task is flagged as "work"
-            if task_update['flag'] == "work":
-                if  'teams' not in task_update:
+            if task_update.get('flag') == "work":
+                # Check if 'teams' key exists in the task_update
+                if 'teams' not in task_update:
+                    # If no teams provided, delete all existing team members for the task
                     teams_members = self.fetch_members(task_id)["data"]
-                    if(teams_members is not None):
+                    if teams_members is not None:
                         for team_id, task_id, first_name, last_name in teams_members:
                             self.delete_team_member(team_id, task_id)
-                else: 
+                else:
+                    # Process team updates
                     # Fetch existing team members
                     team = self.fetch_members(task_id)["data"]
-                    if(team is not None):
-                        existing_teams = [(row[0], row[1], row[2], row[3]) for row in team]
-                    else: 
-                        existing_teams = []
+                    existing_teams = [(row[0], row[1], row[2], row[3]) for row in team] if team else []
 
                     # Prepare updated team data
-                    new_teams = task_update.get("teams", [])
+                    new_teams = task_update["teams"]
 
                     # Update or add new members
                     updated_team_ids = []
                     for new_team in new_teams:
-                        first_name, last_name = new_team.get("first_name"), new_team.get("last_name")
+                        if isinstance(new_team, tuple):
+                            # Unpack the tuple if new_team is a tuple
+                            first_name, last_name = new_team[-2:]
+                        elif isinstance(new_team, dict):
+                            # Safely access if new_team is a dictionary
+                            first_name, last_name = new_team.get("first_name"), new_team.get("last_name")
+                        else:
+                            continue  # Skip invalid entries
+
                         found = False
                         for team_id, task_id, existing_first, existing_last in existing_teams:
                             name_change = first_name == existing_first and last_name == existing_last
@@ -331,7 +339,7 @@ class TaskManagerDB:
                                 updated_team_ids.append(team_id)
                                 found = True
                                 break
-                            
+
                         if not found:
                             # Insert new member
                             self.insert_team_member(task_id, first_name, last_name)
@@ -348,7 +356,6 @@ class TaskManagerDB:
         finally:
             self.disconnect_db(conn, cursor)
         return response
-
 
     def delete_from_db(self, task_id):
         """

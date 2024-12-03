@@ -151,3 +151,26 @@ def get_overdue_tasks():
 if __name__ == '__main__':
     app.run(debug=True)
     
+
+# # curl test scripts
+
+# # Creating new task
+# # curl -X POST http://127.0.0.1:5000/tasks/new -H "Content-Type: application/json" -d "{\"title\":\"Complete project documentation\",\"due_date\":\"2024/12/15\",\"status\":\"pending\",\"description\":\"Finalize the project documentation for the team.\",\"flag\":\"work\",\"priority\":\"high\",\"teams\":[{\"first_name\":\"John\",\"last_name\":\"Doe\"},{\"first_name\":\"Jane\",\"last_name\":\"Smith\"}]}"
+
+# # Retrieving all tasks
+# # curl -X GET http://127.0.0.1:5000/tasks/all
+
+# # Finding a single task
+# # curl -X GET http://127.0.0.1:5000/tasks/find/1
+
+# # Updating a task
+# # curl -X PUT http://127.0.0.1:5000/tasks/update/1 -H "Content-Type: application/json" -d "{ \"title\": \"Updated Task Title\", \"description\": \"Updated task description\", \"priority\": \"medium\" }"
+
+# # Delete a task
+# # curl -X DELETE http://127.0.0.1:5000/tasks/delete/1
+
+# # Retrieve Pending tasks
+# # curl -X GET http://127.0.0.1:5000/tasks/pending
+
+# # Retrieve overdue tasks
+# # curl -X GET http://127.0.0.1:5000/tasks/overdue
