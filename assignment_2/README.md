@@ -26,7 +26,7 @@ This is an extension from the previous application which was storing data in CSV
     cd assigment_2
     ```
 
-2. Create a virtual environment to run the application by using the following commang
+2. Create a virtual environment to run the application by using the following command
     ```bash
     python -m venv myvenv
     ```
@@ -34,15 +34,17 @@ This is an extension from the previous application which was storing data in CSV
     ```bash
     myvenv scripts/activate
     ```
-4. Once the virtual environment has been activated, you can install the required dependencies for this project by running the following command
+4. Once the virtual environment has been activated, you can install the required dependencies for this project by running the following command. In some environments, use `pip3` instead of `pip`:
     ```bash
+    pip install Flask
     cd src
-    python -m pip freeze install -r requirements.txt 
+    pip install -r requirements.txt 
     ```
 5. Once everything is set up, you can start the server by running the following command
     ```bash
     python server.py
     ```
+    ![Server Running](image.png)
 6. Once the server is up and running, you can now communicate with the application by using tools such as postman or curl to perform the various tests. 
     - Access API: The API will be available at
         ```bash
@@ -69,7 +71,7 @@ This is an extension from the previous application which was storing data in CSV
         ]
     }
     ```
-- Response (Success):
+- Response:
     ```bash
     {
     "data": [],
@@ -78,6 +80,7 @@ This is an extension from the previous application which was storing data in CSV
     "status_code": 201
     }
     ```
+    ![New Task](image-1.png)
 
 2. Retrieve All Tasks
 - URL: http://127.0.0.1:5000/tasks/all
@@ -109,6 +112,8 @@ This is an extension from the previous application which was storing data in CSV
     "status_code": 200
     }
     ```
+    ![All Tasks](image-2.png)
+
 3. Retrieve a Task by ID
 - URL: http://127.0.0.1:5000/tasks/find/<task_id>
 - Method: GET
@@ -136,6 +141,7 @@ This is an extension from the previous application which was storing data in CSV
     "success": true
     }
     ```
+    ![Single Task](image-3.png)
 
 4. Update a Task
 - URL: http://127.0.0.1:5000/tasks/update/<task_id>
@@ -156,7 +162,8 @@ This is an extension from the previous application which was storing data in CSV
         ]
     }
     ```
-- Response (Success):
+
+- Response:
     ```bash
     {
     "data": {
@@ -180,6 +187,8 @@ This is an extension from the previous application which was storing data in CSV
     "success": true
     }
     ```
+    ![Update Task](image-4.png)
+
 5. Delete a Task
 - URL: http://127.0.0.1:5000/tasks/delete/<task_id>
 - Method: DELETE
@@ -191,6 +200,8 @@ This is an extension from the previous application which was storing data in CSV
     "success": true
     }
     ```
+    ![Delete Task](image-7.png)
+
 6. Retrieve Pending Tasks
 - URL: http://127.0.0.1:5000/tasks/pending
 - Method: GET
@@ -221,6 +232,8 @@ This is an extension from the previous application which was storing data in CSV
     "status_code": 200
     }
     ```
+    ![Pending Tasks](image-5.png)
+
 7. Retrieve Overdue Tasks
 - URL: /tasks/overdue
 - Method: GET
@@ -251,14 +264,20 @@ This is an extension from the previous application which was storing data in CSV
     "status_code": 200
     }
     ```
+    ![Overdue Tasks](image-6.png)
 
 ## Future Enhancements
 1. Graphical User Interface (GUI): Implement a GUI for users to interact with the application using a more intuitive interface.
 2. Recurring Tasks: Add support for recurring tasks (e.g., daily, weekly).
-3. Notifications: Implement notifications to remind users of pending or overdue tasks.
-4. Notifications: Integrate email or SMS reminders for pending and overdue tasks.
+3. Notifications: Implement notifications to remind users of pending or overdue tasks by:   - Integrate email or SMS reminders.
 
 ## References
 1. https://www.tutorialspoint.com/sqlite/index.htm
 2. https://www.geeksforgeeks.org/flask-tutorial/
-3. Lecture and Practice notes and codes 
+3. https://python-adv-web-apps.readthedocs.io/en/latest/flask.html
+4. Lecture and Practice notes and codes 
+
+## Supervisor
+- Dr. Gerel - Lecturer Eotvos Lorand University
+## Subject
+- Python programming
