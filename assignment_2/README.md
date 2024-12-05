@@ -14,11 +14,76 @@ This is an extension from the previous application which was storing data in CSV
 - API Access: Fully functional RESTful API for interaction with the task manager.
 
 ## Setup Instructions
+
 ### Prerequisites
 - Python 3.12.0 or higher.
 - Flask framework.
 - Database (SQLite).
 
+## A. Database Schema
+
+### 1. **`task_manager` Table**
+This table stores the details of tasks in the system.
+
+- **Columns:**
+  - `task_id` (INTEGER, Primary Key, Auto Increment): Unique identifier for each task.
+  - `title` (TEXT, NOT NULL): Title of the task.
+  - `due_date` (DATE, NOT NULL): The deadline for the task.
+  - `status` (TEXT, NOT NULL): The status of the task (e.g., `pending`, `completed`).
+  - `description` (TEXT): Detailed description of the task.
+  - `flag` (TEXT, NOT NULL): Indicates the task type (e.g., `work`, `personal`).
+  - `priority` (TEXT): Priority level of the task (e.g., `high`, `medium`, `low`).
+
+### 2. **`teams` Table**
+This table stores information about team members associated with tasks flagged as "work".
+
+- **Columns:**
+  - `team_id` (INTEGER, Primary Key, Auto Increment): Unique identifier for each team member.
+  - `task_id` (INTEGER, Foreign Key): Links the team member to a specific task in the `task_manager` table.
+  - `first_name` (TEXT, NOT NULL): First name of the team member.
+  - `last_name` (TEXT, NOT NULL): Last name of the team member.
+
+- **Relationships:**
+  - `task_id` in the `teams` table is a foreign key referencing the `task_id` in the `task_manager` table.
+
+---
+
+## Database Operations
+
+### Tables Created
+1. **`task_manager` Table**
+   - Stores tasks with details like title, due date, status, etc.
+2. **`teams` Table**
+   - Stores team members associated with tasks flagged as "work".
+
+### Core Operations
+1. **Create Tables:**
+   - `create_task_table()`: Creates the `task_manager` table.
+   - `create_teams_table()`: Creates the `teams` table.
+
+2. **Insert Data:**
+   - `save_to_db(task_data)`: Inserts task data and associated team members.
+
+3. **Retrieve Data:**
+   - `load_from_db()`: Fetches all tasks with their details.
+   - `fetch_members(task_id)`: Fetches team members associated with a task.
+
+4. **Update Data:**
+   - `update_in_db(task_id, task_update)`: Updates task and team details.
+
+5. **Delete Data:**
+   - `delete_team_member(team_id, task_id)`: Deletes a specific team member.
+
+---
+
+## How to Use
+
+1. Initialize the database using the `TaskManagerDB` class.
+2. Create the tables by calling `create_task_table()` and `create_teams_table()`.
+3. Add tasks and optionally team members using `save_to_db()`.
+4. Retrieve, update, and manage tasks and teams through provided functions.
+
+## B. Setting up The Server
 ## Steps to Run:
 1. Clone or download the repository.
     ```bash
